@@ -1,0 +1,116 @@
+import pandas as pd
+
+# Cargar la estructura del autómata desde un archivo CSV
+def cargar_estructura_automata():
+    try:
+        datos = pd.read_csv(ruta_archivo).drop(columns=['Unnamed: 4'], errors='ignore')
+        print("Archivo cargado exitosamente. Primeras filas:")
+        print(datos.head())
+        
+        estructura_automata = {}
+        inicio = None
+        estados_finales = set()
+
+        for _, fila in datos.iterrows():
+            entidad = fila['Entidades']
+            if fila['Unnamed: 0'] == 'Inicio':
+                inicio = entidad
+            elif fila['Unnamed: 0'] == 'Final':
+                estados_finales.add(entidad)
+            
+            estructura_automata[entidad] = {'0': fila['0'], '1': fila['1']}
+
+        return estructura_automata, inicio, estados_finales
+
+    except FileNotFoundError:
+        print("Archivo no encontrado.")
+    except Exception as e:
+        print("Error al cargar el archivo:", e)
+    
+    return None, None, None
+
+# Verificar si una cadena es aceptada por el autómata
+def verificar_cadena(estructura_automata, inicio, estados_finales, cadena):
+    estado_actual = inicio
+
+    for caracter in cadena:
+        if caracter in estructura_automata[estado_actual]:
+            estado_actual = estructura_automata[estado_actual][caracter]
+        else:
+            print(f"Caracter '{caracter}' no reconocido desde el estado '{estado_actual}'.")
+            return False
+
+    if estado_actual in estados_finales:
+        print(f"La cadena '{cadena}' es aceptada por el autómata.")
+        return True
+    else:
+        print(f"La cadena '{cadena}' no es aceptada por el autómata.")
+        return False
+
+# Modificar las rutas de transición en el autómata
+def actualizar_transiciones(estructura_automata):
+    print("\n--- Actualización de transiciones ---")
+    print("Estados actuales:", list(estructura_automata.keys()))
+    
+    estado = input("Especifica el estado que deseas modificar: ")
+    if estado not in estructura_automata:
+        print("El estado no está presente.")
+        return
+
+    trans_0 = input(f"Nueva transición para '0' desde '{estado}': ")
+    trans_1 = input(f"Nueva transición para '1' desde '{estado}': ")
+
+    # Actualizar transiciones en la estructura del autómata
+    estructura_automata[estado]['0'] = trans_0
+    estructura_automata[estado]['1'] = trans_1
+    print(f"Transiciones actualizadas para el estado '{estado}'.")
+
+# Guardar el autómata modificado en un archivo CSV
+def exportar_automata(estructura_automata, inicio, estados_finales):
+    registros = []
+    for estado, transiciones in estructura_automata.items():
+        tipo_estado = ''
+        if estado == inicio:
+            tipo_estado = 'Inicio'
+        elif estado in estados_finales:
+            tipo_estado = 'Final'
+        registros.append({'Unnamed: 0': tipo_estado, 'Entidades': estado, '0': transiciones['0'], '1': transiciones['1']})
+    
+    df_exportado = pd.DataFrame(registros)
+    df_exportado.to_csv(ruta_guardado, index=False)
+    print(f"El autómata actualizado ha sido guardado en '{ruta_guardado}'.")
+
+# Menú principal
+def ejecutar_menu():
+    estructura_automata, inicio, estados_finales = cargar_estructura_automata()
+
+    if not estructura_automata:
+        print("Error en la carga del autómata.")
+        return
+
+    while True:
+        print("\n--- Menú Principal ---")
+        print("1. Verificar una cadena")
+        print("2. Actualizar transiciones")
+        print("3. Guardar cambios y salir")
+
+        opcion = input("Selecciona una opción (1, 2, 3): ")
+
+        if opcion == '1':
+            cadena = input("Ingresa la cadena a verificar: ")
+            verificar_cadena(estructura_automata, inicio, estados_finales, cadena)
+
+        elif opcion == '2':
+            actualizar_transiciones(estructura_automata)
+
+        elif opcion == '3':
+            exportar_automata(estructura_automata, inicio, estados_finales)
+            print("Saliendo del programa.")
+            break
+
+        else:
+            print("Opción no válida. Intenta nuevamente.")
+
+# Ejecutar el programa principal
+if __name__ == "__main__":
+    ejecutar_menu()
