@@ -1,0 +1,5 @@
+def operaciones(a, b, c):
+    resultado = a + b * c
+    return resultado
+
+print(operaciones(10, 5, 1))
